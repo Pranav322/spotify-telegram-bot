@@ -69,8 +69,9 @@ def get_authenticated_spotify_client(user_id):
             client_secret="721c4e2992a84b3787dd9e72f71db1cc",
             redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
             scope="playlist-read-private user-library-read user-read-playback-state",
-        
+
         )
+
         token_info = sp_oauth.refresh_access_token(spotify_user.spotify_refresh_token)
 
         # Update and save the new access token and expiry in the database
@@ -80,29 +81,6 @@ def get_authenticated_spotify_client(user_id):
 
     # Return a Spotipy client using the refreshed or valid access token
     return Spotify(auth=spotify_user.spotify_access_token)
-
-
-
-def check_user_id(request):
-    if request.method == 'GET':
-        user_id = request.GET.get('user_id')
-
-        if user_id is None:
-            return JsonResponse({"error": "User ID parameter is missing."}, status=400)
-
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid user ID parameter."}, status=400)
-
-        # Check if the user ID exists in the SpotifyUser model
-        if SpotifyUser.objects.filter(telegram_user_id=user_id).exists():
-            return JsonResponse({"exists": True})
-        else:
-            return JsonResponse({"exists": False})
-
-    return JsonResponse({"error": "Method not allowed."}, status=405)
-
 
 def get_user_playlists(request):
     if request.method == 'GET':
@@ -126,6 +104,7 @@ def get_user_playlists(request):
         # Fetch user's playlists from Spotify
         playlists = sp.current_user_playlists()
 
+
         # Extract playlist names
         playlist_data = [{
             "name": playlist['name'],
@@ -135,3 +114,51 @@ def get_user_playlists(request):
         return JsonResponse({"playlists": playlist_data})
 
     return JsonResponse({"error": "Method not allowed."}, status=405)
+
+from django.views.decorators.http import require_http_methods
+
+import json
+# Ensure the get_authenticated_spotify_client and any other imports are correctly added
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def merge_playlists(request):
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        user_id1 = data['user_id1']
+        user_id2 = data['user_id2']
+    except KeyError:
+        return JsonResponse({'error': 'Missing data.'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+
+    try:
+        client1 = get_authenticated_spotify_client(user_id1)
+
+        client2 = get_authenticated_spotify_client(user_id2)
+        if not client1 or not client2:
+            raise Exception('Authentication failed for one or both users.')
+
+        user1_track_uris = [item['track']['uri'] for item in client1.current_user_saved_tracks(limit=50)['items']]
+        user2_track_uris = [item['track']['uri'] for item in client2.current_user_saved_tracks(limit=50)['items']]
+
+        merged_track_uris = list(set(user1_track_uris + user2_track_uris))
+
+        playlist_name = "Merged Playlist"
+        user_profile = client1.me()
+        new_playlist = client1.user_playlist_create(user_profile['id'], playlist_name, public=True)
+
+        for i in range(0, len(merged_track_uris), 100):
+            batch = merged_track_uris[i:i+100]
+            client1.playlist_add_items(new_playlist['id'], batch)
+
+        playlist_url = new_playlist['external_urls']['spotify']
+        return JsonResponse({'playlist_link': playlist_url})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+
+
+
