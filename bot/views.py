@@ -162,3 +162,22 @@ def merge_playlists(request):
 
 
 
+def check_user_id(request):
+    if request.method == 'GET':
+        user_id = request.GET.get('user_id')
+
+        if user_id is None:
+            return JsonResponse({"error": "User ID parameter is missing."}, status=400)
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return JsonResponse({"error": "Invalid user ID parameter."}, status=400)
+
+        # Check if the user ID exists in the SpotifyUser model
+        if SpotifyUser.objects.filter(telegram_user_id=user_id).exists():
+            return JsonResponse({"exists": True})
+        else:
+            return JsonResponse({"exists": False})
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
