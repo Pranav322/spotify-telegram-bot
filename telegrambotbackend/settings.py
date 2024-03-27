@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-$)nc%(=v5d@9d=tfrm6ty5%#i&==n9+fn&fs*q=q*f61h@vpw%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['pranavhub.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1' , '.anywhere.com' , 'pranawww.pythoanywhere.com']
 
 
 # Application definition
@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ['pranavhub.pythonanywhere.com']
 INSTALLED_APPS = [
     'rest_framework',
     'bot',
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -110,6 +112,8 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 USE_TZ = True
 
