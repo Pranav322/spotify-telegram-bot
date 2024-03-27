@@ -24,7 +24,7 @@ def spotify_callback(request):
         sp_oauth = SpotifyOAuth(
             client_id="089524721b034aedb34a7914e4b96144",
             client_secret="721c4e2992a84b3787dd9e72f71db1cc",
-            redirect_uri="http://127.0.0.1:8000/api/callback",
+            redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
             scope="playlist-read-private user-library-read user-read-playback-state",
             state=state,
             
@@ -67,7 +67,7 @@ def get_authenticated_spotify_client(user_id):
         sp_oauth = SpotifyOAuth(
             client_id="089524721b034aedb34a7914e4b96144",
             client_secret="721c4e2992a84b3787dd9e72f71db1cc",
-            redirect_uri="http://127.0.0.1:8000/api/callback",
+            redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
             scope="playlist-read-private user-library-read user-read-playback-state",
         
         )
