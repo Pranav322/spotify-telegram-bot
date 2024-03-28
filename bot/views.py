@@ -181,3 +181,64 @@ def check_user_id(request):
             return JsonResponse({"exists": False})
 
     return JsonResponse({"error": "Method not allowed."}, status=405)
+
+@require_http_methods(["GET"])
+def current_playing_song(request):
+    user_id = request.GET.get('user_id')
+
+    if not user_id:
+        return JsonResponse({'error': 'Missing user ID.'}, status=400)
+
+    try:
+        spotify_client = get_authenticated_spotify_client(user_id)
+        if spotify_client:
+            current_track = spotify_client.current_user_playing_track()
+            if current_track and current_track.get('is_playing'):
+                track_name = current_track['item']['name']
+                artist_names = [artist['name'] for artist in current_track['item']['artists']]
+                return JsonResponse({
+                    'track_name': track_name,
+                    'artists': artist_names,
+                    'is_playing': current_track.get('is_playing'),
+                })
+            else:
+                return JsonResponse({'message': 'No track is currently playing.'})
+        else:
+            return JsonResponse({'error': 'Failed to authenticate Spotify client.'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+
+from .utils import play_song_on_spotify
+
+@csrf_exempt
+@require_http_methods(["POST"])
+
+def play_song(request):
+    try:
+        # Check content type
+        if not request.content_type == 'application/json':
+            return JsonResponse({'error': 'Content-Type must be application/json.'}, status=400)
+        
+        # Parse JSON data
+        data = json.loads(request.body.decode('utf-8'))
+        user_id = data.get('user_id')
+        song_name = data.get('song_name')
+        if not user_id or not song_name:
+            return JsonResponse({'error': 'Missing user ID or song name.'}, status=400)
+
+        # Attempt to authenticate Spotify client
+        spotify_client = get_authenticated_spotify_client(user_id)
+        if not spotify_client:
+            return JsonResponse({'error': 'Failed to authenticate Spotify client.'}, status=401)
+
+        # Call function to play song
+        play_song_on_spotify(spotify_client, song_name)
+        return JsonResponse({'message': 'Playback started.'})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
