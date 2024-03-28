@@ -25,7 +25,7 @@ def spotify_callback(request):
             client_id="089524721b034aedb34a7914e4b96144",
             client_secret="721c4e2992a84b3787dd9e72f71db1cc",
             redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
-            scope="playlist-read-private user-library-read user-read-playback-state",
+            scope="playlist-read-private user-library-read user-read-playback-state playlist-modify-public playlist-modify-private user-read-currently-playing user-modify-playback-state user-read-private",
             state=state,
             
         )
