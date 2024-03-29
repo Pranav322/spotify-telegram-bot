@@ -210,8 +210,20 @@ def current_playing_song(request):
 
 
 
+# spotify_utils.py
+def play_song_on_spotify(spotify_client, song_name):
+    # Search for the song to get its URI
+    results = spotify_client.search(q=song_name, type='track', limit=1)
+    tracks = results['tracks']['items']
+    if not tracks:
+        raise Exception('Song not found.')
+    
+    song_uri = tracks[0]['uri']
+    
+    # Start playback
+    spotify_client.start_playback(uris=[song_uri])
 
-from .utils import play_song_on_spotify
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -242,6 +254,7 @@ def play_song(request):
         return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
