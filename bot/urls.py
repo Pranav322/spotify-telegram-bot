@@ -9,4 +9,5 @@ urlpatterns = [
     path('mergeplaylists/' , merge_playlists , name = "merge_playlist"),
     path('current_playing_song/' ,current_playing_song , name = "current_playing_song"),
     path('play_song/' , play_song , name = "play_song"),
+    path('play_together/' , play_together , name = "play_together")
 ]
