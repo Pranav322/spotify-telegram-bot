@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import spotify_callback , check_user_id , get_user_playlists , merge_playlists , current_playing_song , play_song
+from .views import spotify_callback , check_user_id , get_user_playlists , merge_playlists , current_playing_song , play_song , play_together
 
 urlpatterns = [
   
