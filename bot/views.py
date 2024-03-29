@@ -315,3 +315,52 @@ def play_together(request):
         return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+def pause_current_playback(spotify_client):
+    try:
+        # Check the current playback state
+        current_playback = spotify_client.current_playback()
+        
+        # If there's no current playback info, nothing is playing
+        if not current_playback:
+            return "Nothing is currently playing."
+
+        # If music is playing, pause it
+        if current_playback.get('is_playing'):
+            spotify_client.pause_playback()
+            return "Playback paused."
+        else:
+            return "Playback is already paused."
+    except Exception as e:
+        error_message = str(e)
+        if 'No active device found' in error_message:
+            # This error occurs if there's no active device to pause playback on
+            return 'No active device found. Please ensure Spotify is open on your device.'
+        elif 'expired' in error_message.lower():
+            # Handle token expiration explicitly if needed
+            return 'Authentication token expired. Please re-authenticate.'
+        else:
+            # General error handling
+            return f'Error pausing playback: {error_message}'
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def pause(request):
+    try:
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return JsonResponse({'error': 'Missing user ID.'}, status=400)
+
+        spotify_client = get_authenticated_spotify_client(user_id)
+        if spotify_client:
+            message = pause_current_playback(spotify_client)
+            return JsonResponse({'message': message})
+        else:
+            return JsonResponse({'error': 'Failed to authenticate Spotify client.'}, status=401)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
