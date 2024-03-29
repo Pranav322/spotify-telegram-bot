@@ -211,23 +211,49 @@ def current_playing_song(request):
 
 
 # spotify_utils.py
-def play_song_on_spotify(spotify_client, song_name):
+
+def play_song_on_spotify(clients, song_name):
+    """
+    Search for a song by name and start playback on Spotify client(s) active devices.
+
+    Parameters:
+    - clients: A single authenticated Spotipy client object or a list of client objects.
+    - song_name: The name of the song to search for and play.
+
+    Returns:
+    - success: A boolean indicating if the song was successfully played.
+    """
+    if not isinstance(clients, list):
+        clients = [clients]  # Convert single client to a list for consistency
+
     # Search for the song to get its URI
-    results = spotify_client.search(q=song_name, type='track', limit=1)
-    tracks = results['tracks']['items']
+    search_result = clients[0].search(q=song_name, type='track', limit=1)
+    tracks = search_result['tracks']['items']
+    
     if not tracks:
-        raise Exception('Song not found.')
+        print("Song not found.")
+        return False
     
-    song_uri = tracks[0]['uri']
+    track_uri = tracks[0]['uri']
     
-    # Start playback
-    spotify_client.start_playback(uris=[song_uri])
+    # Attempt to start playback on each user's active device
+    for client in clients:
+        try:
+            client.start_playback(uris=[track_uri])
+        except Exception as e:
+            print(f"Failed to start playback for one of the users: {e}")
+            return False
+    
+    return True
 
 
+
+# views.py
+
+# from .utils import play_song_on_spotify
 
 @csrf_exempt
 @require_http_methods(["POST"])
-
 def play_song(request):
     try:
         # Check content type
@@ -259,56 +285,33 @@ def play_song(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def play_together(request):
-    data = json.loads(request.body)
-    requester_user_id = data.get('requester_user_id')
-    target_user_id = data.get('target_user_id')
-    song_name = data.get('song_name')
+    try:
+        # Parse JSON data
+        data = json.loads(request.body.decode('utf-8'))
+        requester_user_id = data.get('requester_user_id')
+        target_user_id = data.get('target_user_id')
+        song_name = data.get('song_name')
+        if not requester_user_id or not target_user_id or not song_name:
+            return JsonResponse({'error': 'Missing requester_user_id, target_user_id, or song_name.'}, status=400)
 
-    # Authenticate Spotify clients for both users
-    requester_client = get_authenticated_spotify_client(requester_user_id)
-    target_client = get_authenticated_spotify_client(target_user_id)
+        # Authenticate Spotify clients for both users
+        requester_client = get_authenticated_spotify_client(requester_user_id)
+        target_client = get_authenticated_spotify_client(target_user_id)
 
-    if not requester_client or not target_client:
-        return JsonResponse({'error': 'Authentication failed for one or both users.'}, status=400)
-    
-    # Example function to search and play a song on Spotify
-    success = play_song_on_spotify([requester_client, target_client], song_name)
+        if not requester_client or not target_client:
+            return JsonResponse({'error': 'Authentication failed for one or both users.'}, status=401)
+        
+        # Example function to search and play a song on Spotify
+        success = play_song_on_spotify([requester_client, target_client], song_name)
 
-    if success:
-        message = "Song is now playing on both devices."
-    else:
-        message = "Failed to play the song."
+        if success:
+            message = "Song is now playing on both devices."
+        else:
+            message = "Failed to play the song."
 
-    return JsonResponse({'message': message})
+        return JsonResponse({'message': message})
 
-def play_song_on_spotify(clients, song_name):
-    """
-    Search for a song by name and start playback on both Spotify clients' active devices.
-
-    Parameters:
-    - clients: A list of authenticated Spotipy client objects.
-    - song_name: The name of the song to search for and play.
-
-    Returns:
-    - success: A boolean indicating if the song was successfully played.
-    """
-    # Assuming the first client is used for the search. In a real scenario, consider
-    # handling search separately or ensuring all users have access to the song.
-    search_result = clients[0].search(q=song_name, type='track', limit=1)
-    tracks = search_result['tracks']['items']
-    
-    if not tracks:
-        print("Song not found.")
-        return False
-    
-    track_uri = tracks[0]['uri']
-    
-    # Attempt to start playback on each user's active device
-    for client in clients:
-        try:
-            client.start_playback(uris=[track_uri])
-        except Exception as e:
-            print(f"Failed to start playback for one of the users: {e}")
-            return False
-    
-    return True
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
