@@ -22,8 +22,8 @@ def spotify_callback(request):
             return HttpResponse("Invalid state parameter.", status=400)
 
         sp_oauth = SpotifyOAuth(
-            client_id="089524721b034aedb34a7914e4b96144",
-            client_secret="721c4e2992a84b3787dd9e72f71db1cc",
+            client_id="",
+            client_secret="",
             redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
             scope="playlist-read-private user-library-read user-read-playback-state playlist-modify-public playlist-modify-private user-read-currently-playing user-modify-playback-state user-read-private",
             state=state,
@@ -65,8 +65,8 @@ def get_authenticated_spotify_client(user_id):
     if spotify_user.is_token_expired:
         # Refresh the token
         sp_oauth = SpotifyOAuth(
-            client_id="089524721b034aedb34a7914e4b96144",
-            client_secret="721c4e2992a84b3787dd9e72f71db1cc",
+            client_id="",
+            client_secret="",
             redirect_uri="https://pranawww.pythonanywhere.com/api/callback",
             scope="playlist-read-private user-library-read user-read-playback-state",
 
